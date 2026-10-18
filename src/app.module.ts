@@ -7,12 +7,21 @@ import { PostsModule } from './features/posts/posts.module.js';
 import { CategoriesModule } from './features/categories/categories.module.js';
 import { TagsModule } from './features/tags/tags.module.js';
 import { BlocksModule } from './features/blocks/blocks.module.js';
+import { AnalyticsModule } from './features/analytics/analytics.module.js';
+import { ThrottlerModule } from '@nestjs/throttler';
+
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    ThrottlerModule.forRoot([
+      {
+        ttl:60_000,
+        limit:10,
+      }
+    ]),
     DatabaseModule,
     AuthModule,
     CachingModule,
@@ -20,6 +29,7 @@ import { BlocksModule } from './features/blocks/blocks.module.js';
     CategoriesModule,
     TagsModule,
     BlocksModule,
+    AnalyticsModule
   ],
   controllers: [],
   providers: [],
