@@ -11,10 +11,10 @@ import { AuthenticationModule } from '../../infra/authentication/authentication.
     imports: [
         TypeOrmModule.forFeature([PostViewEvent, Post,User]),
         AuthenticationModule
-
-],
+    ],
 
     controllers: [AnalyticsController],
     providers: [AnalyticsService],
+    exports:[AnalyticsService]
 })
 export class AnalyticsModule {}

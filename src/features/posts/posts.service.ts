@@ -10,6 +10,7 @@ import { In, Repository,Brackets } from 'typeorm';
 import { Post } from './entities/post.entity.js';
 import { Category } from '../categories/entities/category.entity.js';
 import { Tag } from '../tags/entities/tag.entity.js';
+import { Media } from '../media/entities/media.entity.js';
 
 import { CreatePostDto } from './dto/create-post.dto.js';
 import { UpdatePostDto } from './dto/update-post.dto.js';
@@ -28,9 +29,15 @@ export class PostsService {
 
     @InjectRepository(Tag)
     private readonly tagsRepository: Repository<Tag>,
+
+    @InjectRepository(Media)
+    private readonly mediaRepository:Repository<Media>,
   ) {}
 
-  // Generate slug from title
+  /**
+   *   Generate slug from title
+   * @param title title of post .
+   */
   private generateSlug(title: string): string {
     return title
       .normalize('NFC')
@@ -40,7 +47,11 @@ export class PostsService {
       .replace(/^-+|-+$/g, '');
   }
 
-  // Generate a unique slug
+  /**
+   * Generate a unique slug
+   * @param title 
+   * @returns slug uniq slug
+   */
   private async generateUniqueSlug(title: string): Promise<string> {
     const baseSlug = this.generateSlug(title);
 
@@ -61,7 +72,12 @@ export class PostsService {
     return slug;
   }
 
-  // Find categories and validate their IDs
+
+/**
+ * Find categories and validate their IDs
+ * @param ids ids of categories
+ * @returns category[]
+ */
   private async findCategories(ids: number[]): Promise<Category[]> {
     const uniqueIds = [...new Set(ids)];
 
@@ -84,7 +100,12 @@ export class PostsService {
     return categories;
   }
 
-  // Find tags and validate their IDs
+
+  /**
+   *  Find tags and validate their IDs
+   * @param ids 
+   * @returns tag[]
+   */
   private async findTags(ids: number[]): Promise<Tag[]> {
     const uniqueIds = [...new Set(ids)];
 
@@ -107,21 +128,23 @@ export class PostsService {
     return tags;
   }
 
-  // Create post
+
+/**
+ * create post
+ * @param dto 
+ * @param userId 
+ * @returns Post
+ */
   async create(dto: CreatePostDto, userId: number): Promise<Post> {
-     console.log('1. create started');
     const { title, excerpt, isPublished } = dto;
 
     const categories = await this.findCategories(
       dto.categoryIds ?? [],
     );
-    console.log('2. categories found');
 
     const tags = await this.findTags(dto.tagIds ?? []);
-  console.log('3. tags found');
 
     const slug = await this.generateUniqueSlug(title);
-      console.log('4. slug generated');
 
     const published = isPublished ?? false;
 
@@ -135,18 +158,16 @@ export class PostsService {
       categories,
       tags,
     });
-      console.log('5. saving post');
 
-
-    // return this.postsRepository.save(post);
-    const savedPost = await this.postsRepository.save(post);
-  console.log('6. post saved');
-
-  return savedPost;
-
+     return this.postsRepository.save(post);
   }
 
-  // Get all published posts
+
+/**
+ * Get all published posts
+ * @param query post query dto
+ * @returns Post[]
+ */
  async findPublished(query: PostQueryDto): Promise<Post[]> {
   const qb = this.postsRepository
     .createQueryBuilder('post')
@@ -194,7 +215,12 @@ return qb
   .getMany();
 }
 
-  // Get one published post
+
+/**
+ * Get one published post
+ * @param id 
+ * @returns post
+ */
   async findPublishedOne(id: number): Promise<Post> {
     const post = await this.postsRepository.findOne({
       where: {
@@ -204,6 +230,7 @@ return qb
       relations: {
         categories: true,
         tags: true,
+        images:true,
       },
     });
 
@@ -213,6 +240,8 @@ return qb
 
     return post;
   }
+
+
 
   // Get all posts for admin
   async findAllForAdmin(): Promise<Post[]> {
@@ -225,13 +254,18 @@ return qb
     });
   }
 
-  // Get one post for admin
+  /**
+   * Get one post for admin
+   * @param id 
+   * @returns post[] list of post
+   */
   async findOneForAdmin(id: number): Promise<Post> {
     const post = await this.postsRepository.findOne({
       where: { id },
       relations: {
         categories: true,
         tags: true,
+        images:true,
       },
     });
 
@@ -242,7 +276,13 @@ return qb
     return post;
   }
 
-  // Update post
+
+/**
+ *  Update post
+ * @param id 
+ * @param updatePostDto 
+ * @returns 
+ */
   async update(
     id: number,
     updatePostDto: UpdatePostDto,
@@ -282,7 +322,11 @@ return qb
     return this.findOneForAdmin(id);
   }
 
-  // Delete post
+
+  /**
+   * Delete post
+   * @param id 
+   */
   async remove(id: number): Promise<void> {
     const post = await this.findOneForAdmin(id);
 

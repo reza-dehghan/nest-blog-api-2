@@ -20,6 +20,9 @@ import { MediaService } from './media.service.js';
 import { JwtAuthGuard } from '../../infra/authentication/guards/jwt-auth.guard.js';
 import { RequestedUser } from '../../infra/authentication/decorators/requested-user.decorator.js';
 import type { AuthenticatedUser } from '../../core/authentication/authentication.types.js';
+import { Roles } from '../../infra/authentication/decorators/roles.decorator.js';
+import { RolesGuard } from '../../infra/authentication/jwt/roles.guard.js';
+import { UserRole } from '../entities/user.entity.js';
 
 @Controller('media')
 export class MediaController {
@@ -70,6 +73,22 @@ export class MediaController {
         @RequestedUser() user: AuthenticatedUser,
     ) {
         return this.mediaService.updateAvatar(user.id, mediaId);
+    }
+
+
+    @Post('posts/:postId')
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles(UserRole.ADMIN)
+    async attachToPost(
+        @Param('postId', ParseIntPipe) postId: number,
+        @Body('mediaId', ParseIntPipe) mediaId: number,
+        @RequestedUser() user: AuthenticatedUser,
+    ) {
+        return this.mediaService.attachToPost(
+            user.id,
+            postId,
+            mediaId,
+        );
     }
 
 }

@@ -46,9 +46,7 @@ export class TagsService {
             await this.tagsRepository.exists({
                 where: {
                     slug,
-                    ...(excludeId !== undefined
-                        ? { id: Not(excludeId) }
-                        : {}),
+                    ...(excludeId !== undefined? { id: Not(excludeId) }: {}),
                 },
             })
         ) {

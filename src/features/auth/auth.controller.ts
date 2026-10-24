@@ -6,6 +6,10 @@ import { RegisterDto } from './dto/register.dto.js';
 import { LoginDto } from './dto/login.dto.js';
 
 import type { AuthenticatedToken } from '../../core/authentication/authentication.types.js';
+import { ChangePasswordDto } from './dto/change-password.dto.js';
+import { RequestedUser } from '../../infra/authentication/decorators/requested-user.decorator.js';
+import type { AuthenticatedUser } from '../../core/authentication/authentication.types.js';
+
 type LogoutRequest = Request & {
   authToken: AuthenticatedToken;
 };
@@ -34,6 +38,16 @@ export class AuthController {
     const { jti, expiresAt } = request.authToken;
 
     return this.authService.logout(jti, expiresAt);
+  }
+
+
+  @Post('change-password')
+  @UseGuards(JwtAuthGuard)
+  changepassword(
+    @Body() dto:ChangePasswordDto,
+    @RequestedUser() user:AuthenticatedUser,
+  ):Promise<{message:string}>{
+    return this.authService.changePassword(user.id,dto)
   }
 
 }

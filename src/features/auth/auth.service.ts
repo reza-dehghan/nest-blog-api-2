@@ -9,6 +9,9 @@ import { CACHE_PROVIDER } from '../../core/chaching/cache.types.js';
 import type { CacheProvider } from '../../core/chaching/cache.types.js';
 import {TOKEN_INSPECTOR,} from '../../core/authentication/authentication.types.js';
 import type {TokenInspector,} from '../../core/authentication/authentication.types.js';
+import { ChangePasswordDto } from './dto/change-password.dto.js';
+import { LoginDto } from './dto/login.dto.js';
+import { RegisterDto } from './dto/register.dto.js';
 @Injectable()
 export class AuthService {
   constructor(
@@ -21,27 +24,26 @@ export class AuthService {
     @Inject(TOKEN_INSPECTOR)
     private readonly tokenInspector: TokenInspector,
   ) {}
-
-  async register(data: {
-    firstName: string;
-    lastName: string;
-    email: string;
-    password: string;
-  }) {
+/**
+ * create a new user account
+ * @param dto the user data
+ * @returns the new user id ,email and role
+ */
+  async register(dto:RegisterDto) {
     const existingUser = await this.usersService.findByEmail(
-      data.email,
+      dto.email,
     );
 
     if (existingUser) {
       throw new ConflictException('Email is already registered');
     }
 
-    const hashedPassword = await bcrypt.hash(data.password, 10);
+    const hashedPassword = await bcrypt.hash(dto.password, 10);
 
     const user = await this.usersService.create({
-        firstName: data.firstName,
-        lastName: data.lastName,
-        email: data.email,
+        firstName: dto.firstName,
+        lastName: dto.lastName,
+        email: dto.email,
         password: hashedPassword,
 });
 
@@ -53,18 +55,23 @@ export class AuthService {
   }
 
 
-  async login(data: {
-    email: string;
-    password: string;
-  }) {
-    const user = await this.usersService.findByEmail(data.email);
+
+
+/**
+ * checks the user credentials skd create a access token 
+ * 
+ * @param dto the user login data
+ * @returns object access token 
+ */
+  async login(dto:LoginDto) {
+    const user = await this.usersService.findByEmail(dto.email);
 
     if (!user) {
       throw new UnauthorizedException('Invalid email or password');
     }
 
     const isPasswordValid = await bcrypt.compare(
-      data.password,
+      dto.password,
       user.password,
     );
 
@@ -82,6 +89,14 @@ export class AuthService {
     };
   }
 
+
+  /**
+   * Revokes the current access token until it expires.
+   * 
+   * @param jti the uniq id of the access token
+   * @param expiresAt  the token expirtion
+   * @returns A message confirming logout.
+   */
 async logout(jti: string, expiresAt: number) {
   const ttl = expiresAt - Date.now();
 
@@ -94,6 +109,44 @@ async logout(jti: string, expiresAt: number) {
   return {
     message: 'Logged out successfully',
   };
+}
+
+
+
+/**
+ * Changes the user's password.
+ * 
+ * @param userId the iD of the user.
+ * @param dto The current and new password.
+ * @returns A message confirming the password change.
+ * @throws UnauthorizedException if the user does not exist or the current password is incorrect.
+ */
+async changePassword(
+userId:number,
+dto:ChangePasswordDto
+):Promise<{message:string}> {
+  const user = await this.usersService.findById(userId)
+
+  if(!user){
+    throw new UnauthorizedException('invalid user')
+  }
+
+  const isPasswordValid = await bcrypt.compare(
+    dto.currentPassword,
+    user.password
+  );
+
+  if(!isPasswordValid){
+    throw new UnauthorizedException('current password id incorrect')
+  }
+
+  const hashPassword = await bcrypt.hash(dto.newPassword,10);
+  await this.usersService.updatePassword(user.id,hashPassword);
+
+  return{
+    message:'Password changed successfully',
+  };
+
 }
 
 }

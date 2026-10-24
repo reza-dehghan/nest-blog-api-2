@@ -33,6 +33,7 @@ export class BlocksService {
         private readonly dataSource: DataSource,
     ) {}
 
+
     private validateContent(content: string): void {
         if (Buffer.byteLength(content, 'utf8') > 1024) {
             throw new BadRequestException(
@@ -47,6 +48,12 @@ export class BlocksService {
         }
     }
 
+    /**
+     * Checks whether the user is allowed to manage the post.
+
+     * @param post 
+     * @param user 
+     */
     private ensureCanManagePost(
         post: Post,
         user: AuthenticatedUser,
@@ -60,6 +67,8 @@ export class BlocksService {
             );
         }
     }
+
+
 
     async create(
         postId: number,
@@ -90,9 +99,10 @@ export class BlocksService {
                                 'Content is required for text blocks.',
                             );
                         }
-
                         this.validateContent(dto.content);
                         content = dto.content;
+
+
                     } else if (type === BlockType.IMAGE) {
                         if (dto.mediaId === undefined) {
                             throw new BadRequestException(
@@ -262,6 +272,8 @@ export class BlocksService {
             .take(3)
             .getMany();
     }
+
+
 
     async remove(
         id: number,

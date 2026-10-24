@@ -1,5 +1,5 @@
 
-import { Controller, Param, ParseIntPipe, Post,Get } from '@nestjs/common';
+import { Controller, Param, ParseIntPipe, Post,Get, Query } from '@nestjs/common';
 import { AnalyticsService } from './analytics.service.js';
 import { UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../../infra/authentication/guards/jwt-auth.guard.js';
@@ -9,6 +9,8 @@ import { RolesGuard } from '../../infra/authentication/jwt/roles.guard.js';
 import { Roles } from '../../infra/authentication/decorators/roles.decorator.js';
 import { UserRole } from '../entities/user.entity.js';
 import { ThrottlerGuard } from '@nestjs/throttler';
+import { AnalyticsDateRangeDto } from './dto/analytics-date-range.dto.js';
+
 
 @Controller('analytics')
 export class AnalyticsController {
@@ -17,8 +19,9 @@ export class AnalyticsController {
     ) {}
 
 
-   @Post('posts/:postId/views')
+    @Post('posts/:postId/views')
     @UseGuards(JwtAuthGuard,ThrottlerGuard)
+
     async recordVisit(
         @Param('postId', ParseIntPipe) postId: number,
         @RequestedUser() user: AuthenticatedUser,
@@ -27,9 +30,12 @@ export class AnalyticsController {
     }
 
     
+
+
     @Get('overview')
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(UserRole.ADMIN)
+
     getOverview() {
         return this.analyticsService.getOverview();
     }
@@ -38,24 +44,34 @@ export class AnalyticsController {
     @Get('posts/:postId')
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(UserRole.ADMIN)
+
     getPostStats(
-    @Param('postId', ParseIntPipe) postId: number,
+        @Param('postId', ParseIntPipe) postId: number,
+        @Query() query:AnalyticsDateRangeDto,
     ) {
-    return this.analyticsService.getPostStats(postId);
+    return this.analyticsService.getPostStats(postId,query.startDate,query.endDate);
     }
+
+
 
     @Get('posts/popular')
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(UserRole.ADMIN)
-    getPopularPosts() {
-        return this.analyticsService.getPopularPosts();
+
+    getPopularPosts(@Query() query:AnalyticsDateRangeDto) {
+        return this.analyticsService.getPopularPosts(query.startDate,query.endDate);
     }
+
+
 
     @Get('views/daily')
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles(UserRole.ADMIN)
-    getDailyViews() {
-        return this.analyticsService.getDailyViews();
+
+    getDailyViews(
+        @Query() query:AnalyticsDateRangeDto
+    ) {
+        return this.analyticsService.getDailyViews(query.startDate,query.endDate);
     }
 
 

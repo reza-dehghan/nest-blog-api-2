@@ -29,6 +29,7 @@ import { PostQueryDto } from './dto/post-query.dto.js';
 export class PostsController {
   constructor(private readonly postsService: PostsService) {}
 
+
   // Create a post (ADMIN only)
   @HttpPost()
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -37,16 +38,17 @@ export class PostsController {
     @Body() createPostDto: CreatePostDto,
     @RequestedUser() user: AuthenticatedUser,
   ) {
-      console.log('POST controller reached');
 
     return this.postsService.create(createPostDto, user.id);
   }
+
 
   // Get all published posts (public)
   @Get()
   findPublished(@Query()query:PostQueryDto) {
     return this.postsService.findPublished(query);
   }
+
 
   // Get all posts for admin (ADMIN only)
   @Get('admin/all')
@@ -56,6 +58,8 @@ export class PostsController {
     return this.postsService.findAllForAdmin();
   }
 
+
+
   // Get one post for admin (ADMIN only)
   @Get('admin/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -64,11 +68,15 @@ export class PostsController {
     return this.postsService.findOneForAdmin(id);
   }
 
+
+
   // Get one published post (public)
   @Get(':id')
   findPublishedOne(@Param('id', ParseIntPipe) id: number) {
     return this.postsService.findPublishedOne(id);
   }
+
+
 
   // Update a post (ADMIN only)
   @Patch(':id')
@@ -81,6 +89,8 @@ export class PostsController {
     return this.postsService.update(id, updatePostDto);
   }
 
+
+  
   // Delete a post (ADMIN only)
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)

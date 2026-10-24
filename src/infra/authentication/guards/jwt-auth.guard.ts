@@ -17,6 +17,7 @@ import type {
 
 import { CACHE_PROVIDER } from '../../../core/chaching/cache.types.js';
 import type { CacheProvider } from '../../../core/chaching/cache.types.js';
+
 export type AuthenticatedRequest = Request & {
   authToken: AuthenticatedToken;
   user: AuthenticatedToken['user'];
@@ -33,7 +34,6 @@ export class JwtAuthGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    console.log('JwtAuthGuard started');
 
     const request = context
       .switchToHttp()
@@ -45,16 +45,13 @@ export class JwtAuthGuard implements CanActivate {
     if (scheme !== 'Bearer' || !token) {
       throw new UnauthorizedException('Bearer token is required');
     }
-console.log('1. Before token inspection');
     const authenticatedToken =
       await this.tokenInspector.inspectToken(token);
-      console.log('2. After token inspection');
 
 
     if (!authenticatedToken) {
       throw new UnauthorizedException('Invalid or expired token');
     }
-    console.log('3. Before cache check');
 
     try {
       const revoked = await this.cache.get<boolean>(

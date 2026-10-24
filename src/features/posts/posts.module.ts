@@ -5,14 +5,14 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Post } from './entities/post.entity.js';
 import { Category } from '../categories/entities/category.entity.js';
 import { Tag } from '../tags/entities/tag.entity.js';
-
-import { PostsService } from './posts.service.js';
+import { Media } from '../media/entities/media.entity.js';
 import { PostsController } from './posts.controller.js';
 import { AuthenticationModule } from '../../infra/authentication/authentication.module.js';
+import { PostsService } from './posts.service.js';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Post, Category, Tag]),
+    TypeOrmModule.forFeature([Post, Category, Tag,Media]),
     AuthenticationModule,
 
 ],
