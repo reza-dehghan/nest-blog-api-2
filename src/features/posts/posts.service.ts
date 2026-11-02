@@ -2,6 +2,7 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -15,11 +16,13 @@ import { Media } from '../media/entities/media.entity.js';
 import { CreatePostDto } from './dto/create-post.dto.js';
 import { UpdatePostDto } from './dto/update-post.dto.js';
 import { PostQueryDto } from './dto/post-query.dto.js';
+import { RequestContextService } from '../../core/request-context/request-context.service.js';
 
 
 
 @Injectable()
 export class PostsService {
+  private readonly logger = new Logger(PostsService.name)
   constructor(
     @InjectRepository(Post)
     private readonly postsRepository: Repository<Post>,
@@ -32,7 +35,11 @@ export class PostsService {
 
     @InjectRepository(Media)
     private readonly mediaRepository:Repository<Media>,
+
+    private readonly requestContext:RequestContextService,
+
   ) {}
+
 
   /**
    *   Generate slug from title
@@ -159,7 +166,13 @@ export class PostsService {
       tags,
     });
 
-     return this.postsRepository.save(post);
+       const savedPost = await this.postsRepository.save(post);
+     this.logger.log(
+      'Post created successfuly',
+      {postId:savedPost.id,
+      requestId:this.requestContext.getRequestId(),
+      });
+     return savedPost;
   }
 
 

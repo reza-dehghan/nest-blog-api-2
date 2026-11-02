@@ -1,35 +1,58 @@
 
-import {ConflictException,Injectable,UnauthorizedException,} from '@nestjs/common';
-import { Inject } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  UnauthorizedException,
+  Logger,
+  Inject,
+} from '@nestjs/common';
+
 import bcrypt from 'bcrypt';
+
 import { UsersService } from '../users/users.service.js';
-import {TOKEN_ISSUER,} from '../../core/authentication/authentication.types.js';
-import type {TokenIssuer,} from '../../core/authentication/authentication.types.js';
+
+import {
+  TOKEN_ISSUER,
+  TOKEN_INSPECTOR,
+} from '../../core/authentication/authentication.types.js';
+
+import type {
+  TokenIssuer,
+  TokenInspector,
+} from '../../core/authentication/authentication.types.js';
+
 import { CACHE_PROVIDER } from '../../core/chaching/cache.types.js';
 import type { CacheProvider } from '../../core/chaching/cache.types.js';
-import {TOKEN_INSPECTOR,} from '../../core/authentication/authentication.types.js';
-import type {TokenInspector,} from '../../core/authentication/authentication.types.js';
+
+import { RequestContextService } from '../../core/request-context/request-context.service.js';
+
 import { ChangePasswordDto } from './dto/change-password.dto.js';
 import { LoginDto } from './dto/login.dto.js';
 import { RegisterDto } from './dto/register.dto.js';
+
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly usersService: UsersService,
 
     @Inject(TOKEN_ISSUER)
     private readonly tokenIssuer: TokenIssuer,
+
     @Inject(CACHE_PROVIDER)
     private readonly cache: CacheProvider,
+
     @Inject(TOKEN_INSPECTOR)
     private readonly tokenInspector: TokenInspector,
+
+    private readonly requestContext: RequestContextService,
   ) {}
-/**
- * create a new user account
- * @param dto the user data
- * @returns the new user id ,email and role
- */
-  async register(dto:RegisterDto) {
+
+  /**
+   * Creates a new user account.
+   */
+  async register(dto: RegisterDto) {
     const existingUser = await this.usersService.findByEmail(
       dto.email,
     );
@@ -41,11 +64,11 @@ export class AuthService {
     const hashedPassword = await bcrypt.hash(dto.password, 10);
 
     const user = await this.usersService.create({
-        firstName: dto.firstName,
-        lastName: dto.lastName,
-        email: dto.email,
-        password: hashedPassword,
-});
+      firstName: dto.firstName,
+      lastName: dto.lastName,
+      email: dto.email,
+      password: hashedPassword,
+    });
 
     return {
       id: user.id,
@@ -54,19 +77,19 @@ export class AuthService {
     };
   }
 
-
-
-
-/**
- * checks the user credentials skd create a access token 
- * 
- * @param dto the user login data
- * @returns object access token 
- */
-  async login(dto:LoginDto) {
+  /**
+   * Checks user credentials and creates an access token.
+   */
+  async login(dto: LoginDto) {
     const user = await this.usersService.findByEmail(dto.email);
 
     if (!user) {
+      this.logger.warn('Login failed', {
+        event: 'LOGIN',
+        outcome: 'FAILURE',
+        requestId: this.requestContext.getRequestId(),
+      });
+
       throw new UnauthorizedException('Invalid email or password');
     }
 
@@ -76,6 +99,12 @@ export class AuthService {
     );
 
     if (!isPasswordValid) {
+      this.logger.warn('Login failed', {
+        event: 'LOGIN',
+        outcome: 'FAILURE',
+        requestId: this.requestContext.getRequestId(),
+      });
+
       throw new UnauthorizedException('Invalid email or password');
     }
 
@@ -84,69 +113,63 @@ export class AuthService {
       role: user.role,
     });
 
+    this.logger.log('Login successful', {
+      event: 'LOGIN',
+      outcome: 'SUCCESS',
+      actorId: user.id,
+      requestId: this.requestContext.getRequestId(),
+    });
+
     return {
       access_token: accessToken,
     };
   }
 
-
   /**
    * Revokes the current access token until it expires.
-   * 
-   * @param jti the uniq id of the access token
-   * @param expiresAt  the token expirtion
-   * @returns A message confirming logout.
    */
-async logout(jti: string, expiresAt: number) {
-  const ttl = expiresAt - Date.now();
+  async logout(jti: string, expiresAt: number) {
+    const ttl = expiresAt - Date.now();
 
-  if (!jti || !Number.isFinite(ttl) || ttl <= 0) {
-    throw new UnauthorizedException('Invalid or expired token');
+    if (!jti || !Number.isFinite(ttl) || ttl <= 0) {
+      throw new UnauthorizedException('Invalid or expired token');
+    }
+
+    await this.cache.set(`revoked-token:${jti}`, true, ttl);
+
+    return {
+      message: 'Logged out successfully',
+    };
   }
 
-  await this.cache.set(`revoked-token:${jti}`, true, ttl);
+  /**
+   * Changes the user's password.
+   */
+  async changePassword(
+    userId: number,
+    dto: ChangePasswordDto,
+  ): Promise<{ message: string }> {
+    const user = await this.usersService.findById(userId);
 
-  return {
-    message: 'Logged out successfully',
-  };
-}
+    if (!user) {
+      throw new UnauthorizedException('invalid user');
+    }
 
+    const isPasswordValid = await bcrypt.compare(
+      dto.currentPassword,
+      user.password,
+    );
 
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('current password id incorrect');
+    }
 
-/**
- * Changes the user's password.
- * 
- * @param userId the iD of the user.
- * @param dto The current and new password.
- * @returns A message confirming the password change.
- * @throws UnauthorizedException if the user does not exist or the current password is incorrect.
- */
-async changePassword(
-userId:number,
-dto:ChangePasswordDto
-):Promise<{message:string}> {
-  const user = await this.usersService.findById(userId)
+    const hashPassword = await bcrypt.hash(dto.newPassword, 10);
 
-  if(!user){
-    throw new UnauthorizedException('invalid user')
+    await this.usersService.updatePassword(user.id, hashPassword);
+
+    return {
+      message: 'Password changed successfully',
+    };
   }
-
-  const isPasswordValid = await bcrypt.compare(
-    dto.currentPassword,
-    user.password
-  );
-
-  if(!isPasswordValid){
-    throw new UnauthorizedException('current password id incorrect')
-  }
-
-  const hashPassword = await bcrypt.hash(dto.newPassword,10);
-  await this.usersService.updatePassword(user.id,hashPassword);
-
-  return{
-    message:'Password changed successfully',
-  };
-
-}
-
 }

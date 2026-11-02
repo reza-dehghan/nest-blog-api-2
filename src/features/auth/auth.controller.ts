@@ -8,6 +8,8 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
+
+
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -107,7 +109,7 @@ export class AuthController {
 
 
 
-  
+
   @Post('change-password')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Change the current user password' })

@@ -9,6 +9,9 @@ import { TagsModule } from './features/tags/tags.module.js';
 import { BlocksModule } from './features/blocks/blocks.module.js';
 import { AnalyticsModule } from './features/analytics/analytics.module.js';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { APP_FILTER } from '@nestjs/core';
+import { GlobalExceptionFilter } from './infra/http/filters/global-exception.filter.js';
+import { RequestContextModule } from './core/request-context/request-context.module.js';
 
 
 @Module({
@@ -29,9 +32,16 @@ import { ThrottlerModule } from '@nestjs/throttler';
     CategoriesModule,
     TagsModule,
     BlocksModule,
-    AnalyticsModule
+    AnalyticsModule,
+    RequestContextModule,
   ],
   controllers: [],
-  providers: [],
+  providers: [
+    {
+      provide:APP_FILTER,
+      useClass:GlobalExceptionFilter,
+    },
+
+  ],
 })
-export class AppModule { }
+export class AppModule {}

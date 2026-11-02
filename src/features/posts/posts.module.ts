@@ -9,11 +9,13 @@ import { Media } from '../media/entities/media.entity.js';
 import { PostsController } from './posts.controller.js';
 import { AuthenticationModule } from '../../infra/authentication/authentication.module.js';
 import { PostsService } from './posts.service.js';
+import { RequestContextModule } from '../../core/request-context/request-context.module.js';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Post, Category, Tag,Media]),
     AuthenticationModule,
+    RequestContextModule,
 
 ],
   controllers: [PostsController],
