@@ -97,6 +97,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { randomUUID } from 'crypto';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import type { RequestContextStore } from './core/request-context/request-context.types.js';
+import { MetricsService } from './core/monitoring/metrics.service.js';
 
 
 function configureSwagger(
@@ -109,6 +110,7 @@ function configureSwagger(
     .setTitle(`${packageName} API`)
     .setDescription(packageDescription)
     .setVersion(packageVersion)
+    .addBearerAuth()
     .addServer('http://localhost:3000', 'Local')
     .build();
 
@@ -166,23 +168,66 @@ async function bootstrap() {
   );
 
   const app = await NestFactory.create(AppModule, {
-    logger,
-  });
+  logger,
+});
 
-  const requestContext = app.get<
+const metricsService = app.get(MetricsService);
+
+const requestContext = app.get<
   AsyncLocalStorage<RequestContextStore>
-  >(AsyncLocalStorage);
+>(AsyncLocalStorage);
 
-  const httpLogger = new Logger('HTTP');
+const httpLogger = new Logger('HTTP');
 
 app.use((req: Request, res: Response, next: NextFunction) => {
+  // Exclude the metrics endpoint from HTTP instrumentation.
+  if (req.path === '/metrics') {
+    return next();
+  }
+
   const requestId = randomUUID();
   const startedAt = Date.now();
 
-  requestContext.run({ requestId }, () => {
+  metricsService.httpRequestsInProgress.inc({
+    method: req.method,
+  });
 
+  requestContext.run({ requestId }, () => {
+    let gaugeReleased = false;
+
+    const releaseGauge = () => {
+      if (gaugeReleased) return;
+
+      gaugeReleased = true;
+
+      metricsService.httpRequestsInProgress.dec({
+        method: req.method,
+      });
+    };
 
     res.once('finish', () => {
+      releaseGauge();
+
+      const durationSeconds = (Date.now() - startedAt) / 1000;
+
+      const route = req.route?.path
+        ? `${req.baseUrl}${req.route.path}`
+        : 'unmatched';
+
+      metricsService.httpRequestsTotal.inc({
+        method: req.method,
+        route,
+        status_code: String(res.statusCode),
+      });
+
+      metricsService.httpRequestDuration.observe(
+        {
+          method: req.method,
+          route,
+        },
+        durationSeconds,
+      );
+
       httpLogger.log('HTTP request completed', {
         requestId,
         method: req.method,
@@ -192,11 +237,15 @@ app.use((req: Request, res: Response, next: NextFunction) => {
       });
     });
 
+    res.once('close', () => {
+      if (!res.writableFinished) {
+        releaseGauge();
+      }
+    });
 
     next();
-
   });
-  });
+});
 
   app.useGlobalPipes(
     new ValidationPipe({

@@ -41,12 +41,33 @@ import { RolesGuard } from '../../infra/authentication/jwt/roles.guard.js';
 import type { AuthenticatedUser } from '../../core/authentication/authentication.types.js';
 import { UserRole } from '../entities/user.entity.js';
 
+import { DataSource } from 'typeorm';
+import { Logger } from '@nestjs/common';
+
+
+
 @ApiTags('Posts')
 @Controller('posts')
 export class PostsController {
+
+
+  private readonly logger = new Logger(PostsController.name);
+
+
   constructor(
     private readonly postsService: PostsService,
+      private readonly dataSource: DataSource,
   ) {}
+
+
+@Get('logger-test-database')
+async testDatabaseError(): Promise<void> {
+  await this.dataSource.query(
+    'SELECT * FROM non_existing_table_for_logger_test',
+  );
+}
+
+
 
   @HttpPost()
   @ApiBearerAuth()

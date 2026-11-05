@@ -167,11 +167,12 @@ export class PostsService {
     });
 
        const savedPost = await this.postsRepository.save(post);
-     this.logger.log(
-      'Post created successfuly',
-      {postId:savedPost.id,
-      requestId:this.requestContext.getRequestId(),
+
+      this.logger.log('Post created successfuly',{
+        postId:savedPost.id,
+        requestId:this.requestContext.getRequestId(),
       });
+
      return savedPost;
   }
 
@@ -332,9 +333,15 @@ return qb
 
     await this.postsRepository.save(post);
 
+    this.logger.log('post updated successfuly',{
+      postId:id
+    });
+
     return this.findOneForAdmin(id);
   }
 
+
+  
 
   /**
    * Delete post
@@ -343,6 +350,12 @@ return qb
   async remove(id: number): Promise<void> {
     const post = await this.findOneForAdmin(id);
 
+    
     await this.postsRepository.remove(post);
+
+
+    this.logger.log('post delete successfuly ',{
+      postId:id,
+    });
   }
 }

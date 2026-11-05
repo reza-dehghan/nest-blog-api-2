@@ -46,7 +46,6 @@ export class RedisCacheAdapter implements CacheProvider {
    * 
    * @param key 
    */
-
   async delete(key: string): Promise<void> {
     await this.cache.delete(key);
   }

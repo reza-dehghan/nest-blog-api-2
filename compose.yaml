@@ -1,0 +1,34 @@
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: nest-blog-redis
+    command: redis-server --appendonly yes
+    ports:
+      - "63379:6379"
+    volumes:
+      - nest_blog_redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    container_name: nest-blog-minio
+    command: server /data --console-address ":9001"
+    ports:
+      - "9100:9000"
+      - "9101:9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+    volumes:
+      - nest_blog_minio_data:/data
+    restart: unless-stopped
+
+volumes:
+  nest_blog_redis_data:
+  nest_blog_minio_data:

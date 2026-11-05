@@ -2,6 +2,7 @@
 import {
     BadRequestException,
     Injectable,
+    Logger,
     NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -13,6 +14,9 @@ import { UpdateTagDto } from './dto/update-tag.dto.js';
 
 @Injectable()
 export class TagsService {
+
+    private readonly logger= new Logger(TagsService.name)
+
     constructor(
         @InjectRepository(Tag)
         private readonly tagsRepository: Repository<Tag>,
@@ -57,20 +61,36 @@ export class TagsService {
         return slug;
     }
 
+
+    /**
+     * create a new tag
+     * @param dto 
+     * @returns 
+     */
     async create(dto: CreateTagDto): Promise<Tag> {
         const tag = this.tagsRepository.create({
             name: dto.name.trim(),
             slug: await this.generateUniqueSlug(dto.name),
         });
 
-        return this.tagsRepository.save(tag);
+      const tagSaved = await this.tagsRepository.save(tag);
+
+        this.logger.log('Tag create successfuly',{
+            tagId:tagSaved.id
+        });
+        return tagSaved;
     }
+
+
+
 
     async findAll(): Promise<Tag[]> {
         return this.tagsRepository.find({
             order: { name: 'ASC' },
         });
     }
+
+
 
     async findOne(id: number): Promise<Tag> {
         const tag = await this.tagsRepository.findOne({
@@ -84,6 +104,9 @@ export class TagsService {
         return tag;
     }
 
+
+
+
     async update(
         id: number,
         dto: UpdateTagDto,
@@ -95,10 +118,19 @@ export class TagsService {
             tag.slug = await this.generateUniqueSlug(dto.name, id);
         }
 
-        await this.tagsRepository.save(tag);
+        const tagSaved= await this.tagsRepository.save(tag);
+
+
+       this.logger.log('tag update successfuly',{
+        tagId:tagSaved.id,
+       });
 
         return this.findOne(id);
     }
+
+
+
+
 
     async remove(id: number): Promise<void> {
         const tag = await this.tagsRepository.findOne({
@@ -117,5 +149,10 @@ export class TagsService {
         }
 
         await this.tagsRepository.remove(tag);
+
+        this.logger.log('Tag deleted successfully', {
+        tagId: id,
+    });
+
     }
 }

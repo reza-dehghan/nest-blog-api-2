@@ -6,6 +6,7 @@ import {
     Injectable,
     InternalServerErrorException,
     NotFoundException,
+    Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { randomUUID } from 'node:crypto';
@@ -22,6 +23,9 @@ import { Post } from '../posts/entities/post.entity.js';
 
 @Injectable()
 export class MediaService {
+
+    private readonly logger = new Logger(MediaService.name);
+
     constructor(
         @InjectRepository(Media)
         private readonly mediaRepository: Repository<Media>,
@@ -35,6 +39,10 @@ export class MediaService {
         @InjectRepository(Post)
         private readonly postRepository:Repository<Post>
     ) {}
+
+
+
+
 
     async upload(input: UploadMediaInput): Promise<Media> {
         const maxSize = 5 * 1024 * 1024;
@@ -81,7 +89,15 @@ export class MediaService {
                 owner:{id:input.ownerId},
             });
 
-            return await this.mediaRepository.save(media);
+           const savedMedia = await this.mediaRepository.save(media);
+
+                this.logger.log('Media uploaded successfully', {
+                    mediaId: savedMedia.id,
+                    ownerId: input.ownerId,
+                    contentType: detectedType.mime,
+                });
+
+                return savedMedia;  
         } catch {
             try {
                 await this.storageProvider.delete(storageKey);
@@ -93,6 +109,11 @@ export class MediaService {
             );
         }
     }
+
+
+
+
+
 
 
 async attachToPost(
@@ -147,11 +168,21 @@ if (profile) {
     media.post = post;
     await this.mediaRepository.save(media);
 
+
+    this.logger.log('Media attached to post successfully', {
+    mediaId,
+    postId,
+    userId,
+});
+
     return {
         postId,
         mediaId,
     };
 }
+
+
+
 
 
 
@@ -196,6 +227,11 @@ async getReadAccess(id: number): Promise<string> {
     return access.url;
 }
 
+
+
+
+
+
     async updateAvatar(userId: number, mediaId: number):Promise<{ profileId: number; avatarMediaId: number }> {
     const media = await this.mediaRepository.findOne({
         where: { id: mediaId },
@@ -233,6 +269,12 @@ async getReadAccess(id: number): Promise<string> {
     profile.avatarMedia = media;
 
     const savedProfile = await this.profileRepository.save(profile);
+
+    this.logger.log('Profile avatar updated successfully', {
+    profileId: savedProfile.id,
+    userId,
+    mediaId,
+    });
 
     return {
         profileId: savedProfile.id,

@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -12,6 +13,9 @@ import { UpdateCategoryDto } from './dto/update-category.dto.js';
 
 @Injectable()
 export class CategoriesService {
+
+  private readonly logger = new Logger(CategoriesService.name);
+
   constructor(
     @InjectRepository(Category)
     private readonly categoriesRepository: Repository<Category>,
@@ -56,6 +60,10 @@ export class CategoriesService {
     return slug;
   }
 
+
+
+
+
   async create(dto: CreateCategoryDto): Promise<Category> {
     const category = this.categoriesRepository.create({
       name: dto.name.trim(),
@@ -63,14 +71,29 @@ export class CategoriesService {
       description: dto.description ?? null,
     });
 
-    return this.categoriesRepository.save(category);
+    const categorySaved= await this.categoriesRepository.save(category);
+
+    this.logger.log('categori created successfuly',{
+      categoryId: categorySaved.id,
+    });
+
+    return categorySaved;
+
   }
+
+
+
+
 
   async findAll(): Promise<Category[]> {
     return this.categoriesRepository.find({
       order: { name: 'ASC' },
     });
   }
+
+
+
+
 
   async findOne(id: number): Promise<Category> {
     const category = await this.categoriesRepository.findOne({
@@ -83,6 +106,10 @@ export class CategoriesService {
 
     return category;
   }
+
+
+
+
 
   async update(
     id: number,
@@ -99,10 +126,18 @@ export class CategoriesService {
       category.description = dto.description;
     }
 
-    await this.categoriesRepository.save(category);
+    const categorySaved = await this.categoriesRepository.save(category);
+
+    this.logger.log('category update successfuly',{
+      categoryId:categorySaved.id,
+    });
 
     return this.findOne(id);
   }
+
+
+
+
 
   async remove(id: number): Promise<void> {
     const category = await this.categoriesRepository.findOne({
@@ -121,5 +156,9 @@ export class CategoriesService {
     }
 
     await this.categoriesRepository.remove(category);
+
+    this.logger.log('delete category successfuly',{
+      categoryId:id,
+    });
   }
 }

@@ -1,0 +1,55 @@
+
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: nest-blog-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - nest_blog_prometheus_data:/prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: nest-blog-grafana
+    ports:
+      - "3001:3000"
+    volumes:
+      - nest_blog_grafana_data:/var/lib/grafana
+    restart: unless-stopped
+
+  loki:
+    image: grafana/loki:latest
+    container_name: nest-blog-loki
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./monitoring/loki/loki-config.yaml:/etc/loki/loki-config.yaml:ro
+      - nest_blog_loki_data:/loki
+    command:
+      - -config.file=/etc/loki/loki-config.yaml
+    restart: unless-stopped
+
+  alloy:
+    image: grafana/alloy:latest
+    container_name: nest-blog-alloy
+    ports:
+      - "4318:4318"
+    volumes:
+      - ./monitoring/alloy/config.alloy:/etc/alloy/config.alloy:ro
+    command:
+      - run
+      - /etc/alloy/config.alloy
+      - --server.http.listen-addr=0.0.0.0:12345
+    restart: unless-stopped
+
+
+
+volumes:
+  nest_blog_prometheus_data:
+  nest_blog_grafana_data:
+  nest_blog_loki_data:
