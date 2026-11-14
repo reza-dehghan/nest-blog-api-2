@@ -1,7 +1,7 @@
 
 import type { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class UpdatePostViewEventForAuthenticatedUsers1781600000000
+export class UpdatePostViewEventForAuthenticatedUsers1792238348477
     implements MigrationInterface
 {
     public async up(queryRunner: QueryRunner): Promise<void> {

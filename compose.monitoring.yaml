@@ -1,55 +1,84 @@
-
 services:
   prometheus:
     image: prom/prometheus:latest
+
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+
     container_name: nest-blog-prometheus
     ports:
-      - "9090:9090"
+      - '9090:9090'
     volumes:
       - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - nest_blog_prometheus_data:/prometheus
     command:
       - --config.file=/etc/prometheus/prometheus.yml
       - --storage.tsdb.path=/prometheus
-    restart: unless-stopped
+    restart: "no"
 
   grafana:
     image: grafana/grafana:latest
     container_name: nest-blog-grafana
     ports:
-      - "3001:3000"
+      - '3001:3000'
+    environment:
+      HTTP_PROXY: http://172.18.0.1:20170
+      HTTPS_PROXY: http://172.18.0.1:20170
+      NO_PROXY: localhost,127.0.0.1,::1,prometheus,loki,tempo,alloy
     volumes:
       - nest_blog_grafana_data:/var/lib/grafana
-    restart: unless-stopped
+    restart: "no"
 
   loki:
     image: grafana/loki:latest
     container_name: nest-blog-loki
     ports:
-      - "3100:3100"
+      - '3100:3100'
     volumes:
       - ./monitoring/loki/loki-config.yaml:/etc/loki/loki-config.yaml:ro
       - nest_blog_loki_data:/loki
     command:
       - -config.file=/etc/loki/loki-config.yaml
-    restart: unless-stopped
+    restart: "no"
 
   alloy:
     image: grafana/alloy:latest
     container_name: nest-blog-alloy
     ports:
-      - "4318:4318"
+      - '4318:4318'
     volumes:
       - ./monitoring/alloy/config.alloy:/etc/alloy/config.alloy:ro
     command:
       - run
       - /etc/alloy/config.alloy
       - --server.http.listen-addr=0.0.0.0:12345
-    restart: unless-stopped
+    restart: "no"
 
-
+  tempo:
+    depends_on:
+      - minio
+    image: grafana/tempo:latest
+    stop_grace_period: 60s
+    container_name: nest-blog-tempo
+    user: '0:0'
+    command:
+      - -config.file=/etc/tempo/tempo.yaml
+      - -config.expand-env=true
+      - -target=all
+    env_file:
+      - .env
+    ports:
+      - '3200:3200'
+    expose:
+      - '4317'
+      - '4318'
+    volumes:
+      - ./monitoring/tempo/tempo.yaml:/etc/tempo/tempo.yaml:ro
+      - nest_blog_tempo_wal:/var/tempo/wal
+    restart: "no"
 
 volumes:
   nest_blog_prometheus_data:
   nest_blog_grafana_data:
   nest_blog_loki_data:
+  nest_blog_tempo_wal:

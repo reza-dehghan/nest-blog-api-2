@@ -10,6 +10,11 @@ export class MetricsController {
 
   @Get()
   async getMetrics(@Res() res: Response): Promise<void> {
+
+    this.metricsService.updateRedisConnectionStatus();
+
+    await this.metricsService.updateDatabaseConnectionStatus();
+
     const metrics = await this.metricsService.getMetrics();
 
     res.setHeader(

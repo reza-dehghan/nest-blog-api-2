@@ -12,6 +12,6 @@ import { CACHE_PROVIDER } from '../../core/chaching/cache.types.js';
       useExisting: RedisCacheAdapter,
     },
   ],
-  exports: [CACHE_PROVIDER],
+  exports: [CACHE_PROVIDER,RedisCacheAdapter],
 })
 export class CachingModule {}

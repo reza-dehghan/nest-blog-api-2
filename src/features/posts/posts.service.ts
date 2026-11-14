@@ -17,12 +17,15 @@ import { CreatePostDto } from './dto/create-post.dto.js';
 import { UpdatePostDto } from './dto/update-post.dto.js';
 import { PostQueryDto } from './dto/post-query.dto.js';
 import { RequestContextService } from '../../core/request-context/request-context.service.js';
-
+import { TracerService } from '../../core/monitoring/opentelemetry/tracing/tracer.service.js';
 
 
 @Injectable()
 export class PostsService {
   private readonly logger = new Logger(PostsService.name)
+
+
+
   constructor(
     @InjectRepository(Post)
     private readonly postsRepository: Repository<Post>,
@@ -38,6 +41,7 @@ export class PostsService {
 
     private readonly requestContext:RequestContextService,
 
+    
   ) {}
 
 

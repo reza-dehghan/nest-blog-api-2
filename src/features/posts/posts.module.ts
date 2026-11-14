@@ -16,6 +16,7 @@ import { RequestContextModule } from '../../core/request-context/request-context
     TypeOrmModule.forFeature([Post, Category, Tag,Media]),
     AuthenticationModule,
     RequestContextModule,
+    
 
 ],
   controllers: [PostsController],
