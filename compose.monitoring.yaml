@@ -14,7 +14,7 @@ services:
     command:
       - --config.file=/etc/prometheus/prometheus.yml
       - --storage.tsdb.path=/prometheus
-    restart: "no"
+    restart: 'no'
 
   grafana:
     image: grafana/grafana:latest
@@ -27,7 +27,7 @@ services:
       NO_PROXY: localhost,127.0.0.1,::1,prometheus,loki,tempo,alloy
     volumes:
       - nest_blog_grafana_data:/var/lib/grafana
-    restart: "no"
+    restart: 'no'
 
   loki:
     image: grafana/loki:latest
@@ -39,7 +39,7 @@ services:
       - nest_blog_loki_data:/loki
     command:
       - -config.file=/etc/loki/loki-config.yaml
-    restart: "no"
+    restart: 'no'
 
   alloy:
     image: grafana/alloy:latest
@@ -52,11 +52,12 @@ services:
       - run
       - /etc/alloy/config.alloy
       - --server.http.listen-addr=0.0.0.0:12345
-    restart: "no"
+    restart: 'no'
 
   tempo:
     depends_on:
-      - minio
+      minio:
+        condition: service_healthy
     image: grafana/tempo:latest
     stop_grace_period: 60s
     container_name: nest-blog-tempo
@@ -75,7 +76,7 @@ services:
     volumes:
       - ./monitoring/tempo/tempo.yaml:/etc/tempo/tempo.yaml:ro
       - nest_blog_tempo_wal:/var/tempo/wal
-    restart: "no"
+    restart: 'no'
 
 volumes:
   nest_blog_prometheus_data:
