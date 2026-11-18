@@ -27,9 +27,9 @@ import { JwtAuthenticationService } from './jwt/jwt-authentication.service.js';
 
         return {
           secret,
-          // signOptions: {
-          //   expiresIn: '15m',
-          // },
+          signOptions: {
+            expiresIn: '15m',
+          },
         };
       },
     }),

@@ -40,6 +40,12 @@ services:
     volumes:
       - nest_blog_minio_data:/data
     restart: 'no'
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:9000/minio/health/live']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
 volumes:
   nest_blog_redis_data:
