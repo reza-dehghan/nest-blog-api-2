@@ -1,4 +1,3 @@
-
 import {
   Body,
   Controller,
@@ -10,7 +9,6 @@ import {
   Post as HttpPost,
   UseGuards,
   Query,
-  
 } from '@nestjs/common';
 
 import {
@@ -44,30 +42,22 @@ import { UserRole } from '../entities/user.entity.js';
 import { DataSource } from 'typeorm';
 import { Logger } from '@nestjs/common';
 
-
-
 @ApiTags('Posts')
 @Controller('posts')
 export class PostsController {
-
-
   private readonly logger = new Logger(PostsController.name);
-
 
   constructor(
     private readonly postsService: PostsService,
-      private readonly dataSource: DataSource,
+    private readonly dataSource: DataSource,
   ) {}
 
-
-@Get('logger-test-database')
-async testDatabaseError(): Promise<void> {
-  await this.dataSource.query(
-    'SELECT * FROM non_existing_table_for_logger_test',
-  );
-}
-
-
+  @Get('logger-test-database')
+  async testDatabaseError(): Promise<void> {
+    await this.dataSource.query(
+      'SELECT * FROM non_existing_table_for_logger_test',
+    );
+  }
 
   @HttpPost()
   @ApiBearerAuth()
@@ -90,6 +80,7 @@ async testDatabaseError(): Promise<void> {
   })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
+
   /** Creates a new post. */
   create(
     @Body() createPostDto: CreatePostDto,
@@ -98,14 +89,12 @@ async testDatabaseError(): Promise<void> {
     return this.postsService.create(createPostDto, user.id);
   }
 
-
-
-
-  
+  /** Returns published posts with optional search, filters, sorting, and cursor pagination. */
   @Get()
   @ApiOperation({
     summary: 'Get published posts',
-    description: 'Returns published posts with optional search, filtering, and sorting.',
+    description:
+      'Returns published posts with optional search, filtering, sorting, and cursor-based pagination.',
   })
   @ApiQuery({
     name: 'search',
@@ -142,24 +131,38 @@ async testDatabaseError(): Promise<void> {
     description: 'Sort direction.',
     example: 'DESC',
   })
+  @ApiQuery({
+    name: 'cursor',
+    required: false,
+    type: String,
+    description:
+      'Opaque cursor returned as nextCursor by the previous response. Omit for the first page.',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Number of posts per page (1-50).',
+    example: 10,
+  })
   @ApiOkResponse({
-    description: 'Published posts returned successfully.',
+    description:
+      'Published posts returned successfully. nextCursor is null when there are no more posts.',
   })
   @ApiBadRequestResponse({
-    description: 'Invalid query parameters.',
+    description: 'Invalid query parameters or invalid cursor.',
   })
-  /** Returns published posts with optional search and filters. */
   findPublished(@Query() query: PostQueryDto) {
     return this.postsService.findPublished(query);
   }
-
 
   /** Returns all posts for administrators. */
   @Get('admin/all')
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Get all posts for administrators',
-    description: 'Returns all posts, including unpublished posts. Accessible only to administrators.',
+    description:
+      'Returns all posts, including unpublished posts. Accessible only to administrators.',
   })
   @ApiOkResponse({
     description: 'All posts returned successfully.',
@@ -176,16 +179,13 @@ async testDatabaseError(): Promise<void> {
     return this.postsService.findAllForAdmin();
   }
 
-
-
-
-
   /** Returns a post by ID for administrators. */
   @Get('admin/:id')
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Get a post by ID for administrators',
-    description: 'Returns a post by ID, including unpublished posts. Accessible only to administrators.',
+    description:
+      'Returns a post by ID, including unpublished posts. Accessible only to administrators.',
   })
   @ApiParam({
     name: 'id',
@@ -214,10 +214,6 @@ async testDatabaseError(): Promise<void> {
     return this.postsService.findOneForAdmin(id);
   }
 
-
-
-
-
   /** Returns a published post by ID. */
   @Get(':id')
   @ApiOperation({
@@ -242,10 +238,6 @@ async testDatabaseError(): Promise<void> {
   findPublishedOne(@Param('id', ParseIntPipe) id: number) {
     return this.postsService.findPublishedOne(id);
   }
-
-
-
-
 
   /** Updates an existing post. */
   @Patch(':id')
@@ -285,10 +277,6 @@ async testDatabaseError(): Promise<void> {
     return this.postsService.update(id, updatePostDto);
   }
 
-
-
-
-
   /** Deletes a post by ID. */
   @Delete(':id')
   @ApiBearerAuth()
@@ -322,7 +310,4 @@ async testDatabaseError(): Promise<void> {
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.postsService.remove(id);
   }
-
-
-
 }

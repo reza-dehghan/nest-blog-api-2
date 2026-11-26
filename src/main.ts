@@ -18,6 +18,10 @@ import { MetricsService } from './core/monitoring/metrics.service.js';
 import { OtelLogsService } from './core/monitoring/opentelemetry/otel-logs.service.js';
 import { OpenTelemetryLogger } from './core/monitoring/opentelemetry/opentelemetry-logger.js';
 
+import { writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+
+
 function configureSwagger(
   app: INestApplication,
   packageName: string,
@@ -32,9 +36,14 @@ function configureSwagger(
     .addServer('http://localhost:3000', 'Local')
     .build();
 
-  const documentFactory = () => SwaggerModule.createDocument(app, config);
+  const document = SwaggerModule.createDocument(app, config);
 
-  SwaggerModule.setup('docs', app, documentFactory);
+  SwaggerModule.setup('docs', app, document);
+
+  writeFileSync(
+    join(process.cwd(), 'swagger.json'),
+    JSON.stringify(document, null, 2),
+  );
 }
 
 function configureLogger(packageName: string, version: string) {
