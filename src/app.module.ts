@@ -13,6 +13,7 @@ import { APP_FILTER } from '@nestjs/core';
 import { GlobalExceptionFilter } from './infra/http/filters/global-exception.filter.js';
 import { RequestContextModule } from './core/request-context/request-context.module.js';
 import { MonitoringModule } from './core/monitoring/monitoring.module.js';
+import { MediaModule } from './features/media/media.module.js';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { MonitoringModule } from './core/monitoring/monitoring.module.js';
     AnalyticsModule,
     RequestContextModule,
     MonitoringModule,
+    MediaModule,
   ],
   controllers: [],
   providers: [

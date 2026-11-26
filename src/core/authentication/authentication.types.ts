@@ -1,4 +1,3 @@
-
 /** Basic information about an authenticated user. */
 export interface AuthenticatedUser {
   id: number;
@@ -11,9 +10,7 @@ export interface AuthenticationProvider {
 }
 
 /** Key for injecting the authentication provider. */
-export const AUTHENTICATION_PROVIDER = Symbol(
-  'AUTHENTICATION_PROVIDER',
-);
+export const AUTHENTICATION_PROVIDER = Symbol('AUTHENTICATION_PROVIDER');
 
 /** Creates access tokens for users. */
 export interface TokenIssuer {
@@ -37,3 +34,46 @@ export interface TokenInspector {
 
 /** Key for injecting the token inspector. */
 export const TOKEN_INSPECTOR = Symbol('TOKEN_INSPECTOR');
+
+// ---------------------------REFRESH_TOKEN--------------------------
+
+/** Represents a newly issued refresh token. */
+export interface IssuedRefreshToken {
+  token: string;
+  jti: string;
+  expiresAt: number;
+}
+
+/** Creates refresh tokens for authenticated users. */
+export interface RefreshTokenIssuer {
+  issueRefreshToken(
+    user: AuthenticatedUser,
+    sessionId: string,
+  ): Promise<IssuedRefreshToken>;
+}
+
+/** Represents a validated refresh token. */
+export interface AuthenticatedRefreshToken {
+  user: AuthenticatedUser;
+  jti: string;
+  sessionId: string;
+  expiresAt: number;
+}
+
+/** Validates refresh tokens and extracts their identity. */
+export interface RefreshTokenInspector {
+  inspectRefreshToken(token: string): Promise<AuthenticatedRefreshToken | null>;
+}
+
+/** Represents the data stored for a refresh token session. */
+export interface RefreshTokenSession {
+  userId: number;
+  currentJti: string;
+  expiresAt: number;
+}
+
+/** Injection token for the refresh token issuer. */
+export const REFRESH_TOKEN_ISSUER = Symbol('REFRESH_TOKEN_ISSUER');
+
+/** Injection token for the refresh token inspector. */
+export const REFRESH_TOKEN_INSPECTOR = Symbol('REFRESH_TOKEN_INSPECTOR');

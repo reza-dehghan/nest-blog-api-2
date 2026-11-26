@@ -1,4 +1,3 @@
-
 /** Provides generic key-value caching operations. */
 export interface CacheProvider {
   get<T>(key: string): Promise<T | null>;
@@ -10,4 +9,3 @@ export interface CacheProvider {
 
 /** Key for injecting the cache provider. */
 export const CACHE_PROVIDER = Symbol('CACHE_PROVIDER');
-

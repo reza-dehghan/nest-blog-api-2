@@ -1,4 +1,3 @@
-
 import {
   Body,
   Controller,
@@ -6,9 +5,10 @@ import {
   HttpStatus,
   Post,
   Req,
+  Res,
+  UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
-
 
 import {
   ApiBadRequestResponse,
@@ -22,6 +22,7 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 
+import type { Request, Response } from 'express';
 import { AuthService } from './auth.service.js';
 import { RegisterDto } from './dto/register.dto.js';
 import { LoginDto } from './dto/login.dto.js';
@@ -35,9 +36,22 @@ import type {
   AuthenticatedUser,
 } from '../../core/authentication/authentication.types.js';
 
+
 type LogoutRequest = Request & {
   authToken: AuthenticatedToken;
 };
+
+const REFRESH_COOKIE_NAME = 'refresh_token';
+
+const REFRESH_COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'lax' as const,
+  path: '/auth',
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+};
+
+
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -63,9 +77,6 @@ export class AuthController {
     return this.authService.register(dto);
   }
 
-
-
-  
   @Post('login')
   @ApiOperation({ summary: 'Log in a user' })
   @ApiOkResponse({
@@ -82,33 +93,70 @@ export class AuthController {
     description: 'User login credentials',
   })
   @HttpCode(HttpStatus.OK)
-  login(@Body() dto: LoginDto) {
-    return this.authService.login(dto);
+  async login(
+    @Body() dto: LoginDto,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const result = await this.authService.login(dto);
+
+    response.cookie(
+      REFRESH_COOKIE_NAME,
+      result.refresh_token,
+      REFRESH_COOKIE_OPTIONS,
+    );
+
+    return {
+      access_token: result.access_token,
+    };
   }
 
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  async refresh(
+    @Req() request: Request,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const refreshToken = request.cookies?.[REFRESH_COOKIE_NAME];
+    if (typeof refreshToken !== 'string') {
+      throw new UnauthorizedException('Refresh token is missing');
+    }
 
+    const result = await this.authService.refreshAccessToken(refreshToken);
 
+    response.cookie(
+      REFRESH_COOKIE_NAME,
+      result.refresh_token,
+      REFRESH_COOKIE_OPTIONS,
+    );
+// console.log('Set-Cookie:', response.getHeader('Set-Cookie'));
+
+    return {
+      access_Token: result.access_token,
+    };
+  }
 
   @Post('logout')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Log out the current user' })
-  @ApiOkResponse({
-    description: 'User logged out successfully',
-  })
-  @ApiUnauthorizedResponse({
-    description: 'Missing or invalid authentication token',
-  })
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
-  logout(@Req() request: LogoutRequest) {
+  async logout(
+    @Req() request: LogoutRequest,
+    @Res({ passthrough: true }) response: Response,
+  ) {
     const { jti, expiresAt } = request.authToken;
 
-    return this.authService.logout(jti, expiresAt);
+    const refreshToken = request.cookies?.[REFRESH_COOKIE_NAME];
+
+    const result = await this.authService.logout(
+      jti,
+      expiresAt,
+      typeof refreshToken === 'string' ? refreshToken : undefined,
+    );
+
+    response.clearCookie(REFRESH_COOKIE_NAME, REFRESH_COOKIE_OPTIONS);
+
+    return result;
   }
-
-
-
-
 
   @Post('change-password')
   @ApiBearerAuth()

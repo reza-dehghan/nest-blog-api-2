@@ -1,4 +1,3 @@
-
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
@@ -7,6 +6,8 @@ import {
   AUTHENTICATION_PROVIDER,
   TOKEN_ISSUER,
   TOKEN_INSPECTOR,
+  REFRESH_TOKEN_ISSUER,
+  REFRESH_TOKEN_INSPECTOR,
 } from '../../core/authentication/authentication.types.js';
 import { JwtAuthGuard } from './guards/jwt-auth.guard.js';
 import { JwtAuthenticationService } from './jwt/jwt-authentication.service.js';
@@ -20,9 +21,7 @@ import { JwtAuthenticationService } from './jwt/jwt-authentication.service.js';
         const secret = configService.get<string>('JWT_SECRET');
 
         if (!secret || Buffer.byteLength(secret, 'utf8') < 32) {
-          throw new Error(
-            'JWT_SECRET must be at least 32 bytes long',
-          );
+          throw new Error('JWT_SECRET must be at least 32 bytes long');
         }
 
         return {
@@ -47,14 +46,24 @@ import { JwtAuthenticationService } from './jwt/jwt-authentication.service.js';
       useExisting: JwtAuthenticationService,
     },
     {
-    provide: TOKEN_INSPECTOR,
-    useExisting: JwtAuthenticationService,
+      provide: TOKEN_INSPECTOR,
+      useExisting: JwtAuthenticationService,
+    },
+    {
+      provide: REFRESH_TOKEN_ISSUER,
+      useExisting: JwtAuthenticationService,
+    },
+    {
+      provide: REFRESH_TOKEN_INSPECTOR,
+      useExisting: JwtAuthenticationService,
     },
   ],
   exports: [
     AUTHENTICATION_PROVIDER,
     TOKEN_ISSUER,
     TOKEN_INSPECTOR,
+    REFRESH_TOKEN_ISSUER,
+    REFRESH_TOKEN_INSPECTOR,
     JwtAuthGuard,
     RolesGuard,
   ],
